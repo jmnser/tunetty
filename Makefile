@@ -1,6 +1,6 @@
 BINARY  := tunetty
 MAIN    := ./cmd/tunetty
-DIST    := dist
+BIN     := bin
 
 # svu runs git with versionsort.suffix forced. If the global gitconfig also sets
 # the deprecated versionsort.prereleasesuffix, git prints a warning that svu
@@ -27,7 +27,7 @@ export CGO_ENABLED = 0
 all: build
 
 build:
-	go build -trimpath -ldflags '$(LDFLAGS)' -o $(DIST)/$(BINARY) $(MAIN)
+	go build -trimpath -ldflags '$(LDFLAGS)' -o $(BIN)/$(BINARY) $(MAIN)
 
 test:
 	go test ./...
@@ -65,4 +65,4 @@ release-patch release-minor release-major:
 	echo "tagged $$v — push with: git push origin $$v"
 
 clean:
-	rm -rf $(DIST)
+	rm -rf $(BIN) dist

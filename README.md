@@ -28,7 +28,7 @@ go install github.com/jmnser/tunetty/cmd/tunetty@latest
 Or grab a binary from the [releases page], or build from source:
 
 ```sh
-make build      # -> dist/tunetty
+make build      # -> bin/tunetty
 ```
 
 ## Quick start

@@ -76,7 +76,7 @@ func (m *Model) navigationKey(msg tea.KeyMsg) (tea.Cmd, bool) {
 	default:
 		return nil, false
 	}
-	return m.previewCover(), true
+	return tea.Batch(m.previewCover(), m.moreSongs()), true
 }
 
 // playbackKey drives the transport controls.
@@ -325,9 +325,8 @@ func (m *Model) switchView(v view) tea.Cmd {
 			return m.loadStarred()
 		}
 	case viewSongs:
-		if m.songs == nil {
-			m.loading++
-			return m.loadSongs()
+		if m.songs == nil && !m.songsBusy {
+			return m.requestSongPage(0)
 		}
 	case viewAlbums:
 		if len(m.albums) == 0 {
@@ -421,7 +420,10 @@ func (m *Model) refreshCurrent() tea.Cmd {
 	case viewPlaylists:
 		return m.loadPlaylists()
 	case viewSongs:
-		return m.loadSongs()
+		m.loading--
+		m.songs, m.songsDone = nil, false
+		m.refreshList()
+		return m.requestSongPage(0)
 	case viewStarred:
 		return m.loadStarred()
 	}

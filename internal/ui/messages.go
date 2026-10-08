@@ -17,7 +17,15 @@ type (
 	albumsMsg    struct{ albums []subsonic.Album }
 	playlistsMsg struct{ playlists []subsonic.Playlist }
 	starredMsg   struct{ starred *subsonic.Starred }
-	songsMsg     struct{ songs []subsonic.Song }
+	// songsMsg carries songs for the Songs tab. offset is where the page
+	// starts; done means the library is complete. shuffle marks a full load
+	// requested by shuffle play, which starts playing once it arrives.
+	songsMsg struct {
+		songs   []subsonic.Song
+		offset  int
+		done    bool
+		shuffle bool
+	}
 	// Drill-down results carry the navigation sequence they were requested
 	// under; see Model.navSeq.
 	artistMsg struct {
@@ -172,16 +180,37 @@ func (m *Model) loadPlaylist(id string, seq int) tea.Cmd {
 	}
 }
 
-// loadSongs fetches the whole library. It pages through many requests, each
-// bounded by the client's own timeout, so no overall deadline is set.
-func (m *Model) loadSongs() tea.Cmd {
+// loadSongPage fetches one page of the library for the Songs tab. A server
+// that cannot page answers the first request with nothing, and the whole
+// library is loaded the slow way instead.
+func (m *Model) loadSongPage(offset int) tea.Cmd {
+	cl := m.client
+	return func() tea.Msg {
+		songs, err := cl.Songs(context.Background(), offset)
+		if err != nil {
+			return errMsg{err: err, counted: true}
+		}
+		if offset == 0 && len(songs) == 0 {
+			if songs, err = cl.AllSongs(context.Background()); err != nil {
+				return errMsg{err: err, counted: true}
+			}
+			return songsMsg{songs: songs, done: true}
+		}
+		return songsMsg{songs: songs, offset: offset, done: len(songs) < subsonic.SongPage}
+	}
+}
+
+// loadAllSongs fetches the whole library for shuffle play. It pages through
+// many requests, each bounded by the client's own timeout, so no overall
+// deadline is set.
+func (m *Model) loadAllSongs() tea.Cmd {
 	cl := m.client
 	return func() tea.Msg {
 		songs, err := cl.AllSongs(context.Background())
 		if err != nil {
 			return errMsg{err: err, counted: true}
 		}
-		return songsMsg{songs}
+		return songsMsg{songs: songs, done: true, shuffle: true}
 	}
 }
 

@@ -381,32 +381,41 @@ func (c *Client) Search(ctx context.Context, query string, o SearchOptions) (*Se
 	return r.Sub.SearchResult, nil
 }
 
-// songPage is how many songs AllSongs requests per call.
-const songPage = 500
+// SongPage is how many songs Songs and AllSongs request per call.
+const SongPage = 500
 
-// AllSongs returns every song in the library. It pages through search3 with
-// an empty query, which OpenSubsonic servers such as Navidrome and gonic
-// answer with the whole catalogue. Servers that return nothing for an empty
-// query are walked album by album instead.
+// Songs returns up to SongPage songs of the library starting at offset. It
+// uses search3 with an empty query, which OpenSubsonic servers such as
+// Navidrome and gonic answer with the whole catalogue. A server without that
+// returns no songs even at offset 0; AllSongs covers that case.
+func (c *Client) Songs(ctx context.Context, offset int) ([]Song, error) {
+	r, err := c.call(ctx, "search3.view", url.Values{
+		"query":       {""},
+		"artistCount": {"0"},
+		"albumCount":  {"0"},
+		"songCount":   {strconv.Itoa(SongPage)},
+		"songOffset":  {strconv.Itoa(offset)},
+	})
+	if err != nil {
+		return nil, err
+	}
+	if r.Sub.SearchResult == nil {
+		return nil, nil
+	}
+	return r.Sub.SearchResult.Song, nil
+}
+
+// AllSongs returns every song in the library, paging through Songs. Servers
+// that return nothing for an empty query are walked album by album instead.
 func (c *Client) AllSongs(ctx context.Context) ([]Song, error) {
 	var out []Song
-	for offset := 0; ; offset += songPage {
-		r, err := c.call(ctx, "search3.view", url.Values{
-			"query":       {""},
-			"artistCount": {"0"},
-			"albumCount":  {"0"},
-			"songCount":   {strconv.Itoa(songPage)},
-			"songOffset":  {strconv.Itoa(offset)},
-		})
+	for offset := 0; ; offset += SongPage {
+		page, err := c.Songs(ctx, offset)
 		if err != nil {
 			return nil, err
 		}
-		var page []Song
-		if r.Sub.SearchResult != nil {
-			page = r.Sub.SearchResult.Song
-		}
 		out = append(out, page...)
-		if len(page) < songPage {
+		if len(page) < SongPage {
 			break
 		}
 	}
@@ -420,8 +429,8 @@ func (c *Client) AllSongs(ctx context.Context) ([]Song, error) {
 // It is the slow fallback for servers without empty query search.
 func (c *Client) songsByAlbum(ctx context.Context) ([]Song, error) {
 	var out []Song
-	for offset := 0; ; offset += songPage {
-		albums, err := c.AlbumList(ctx, AlbumsAlphabetical, songPage, offset)
+	for offset := 0; ; offset += SongPage {
+		albums, err := c.AlbumList(ctx, AlbumsAlphabetical, SongPage, offset)
 		if err != nil {
 			return nil, err
 		}
@@ -432,7 +441,7 @@ func (c *Client) songsByAlbum(ctx context.Context) ([]Song, error) {
 			}
 			out = append(out, al.Song...)
 		}
-		if len(albums) < songPage {
+		if len(albums) < SongPage {
 			return out, nil
 		}
 	}

@@ -96,8 +96,12 @@ type Model struct {
 	albums    []subsonic.Album
 	playlists []subsonic.Playlist
 	starred   *subsonic.Starred
-	// songs is the whole library, loaded on the first visit to Songs.
-	songs []subsonic.Song
+	// songs is the library as far as it is loaded, a page at a time from the
+	// first visit to Songs on. songsDone marks it complete; songsBusy marks a
+	// request in flight, so scrolling does not ask for the same page twice.
+	songs     []subsonic.Song
+	songsDone bool
+	songsBusy bool
 
 	// Finder state.
 	index      index
@@ -227,10 +231,7 @@ func (m *Model) updateData(msg tea.Msg) tea.Cmd {
 		m.refreshIfShowing(viewPlaylists)
 
 	case songsMsg:
-		m.loadingDone()
-		m.songs = msg.songs
-		m.refreshIfShowing(viewSongs)
-		m.setStatus(plural(len(m.songs), "song"))
+		return m.applySongs(msg)
 
 	case starredMsg:
 		m.loadingDone()
@@ -327,6 +328,31 @@ func (m *Model) updateData(msg tea.Msg) tea.Cmd {
 		}
 		m.err = msg.err
 		m.statusTime = time.Now()
+	}
+	return nil
+}
+
+// applySongs folds a page, or the whole library, into the Songs tab.
+func (m *Model) applySongs(msg songsMsg) tea.Cmd {
+	m.loadingDone()
+	m.songsBusy = false
+	switch {
+	case msg.done && msg.offset == 0:
+		m.songs = msg.songs // a full load replaces whatever pages there were
+	case msg.offset == len(m.songs):
+		m.songs = append(m.songs, msg.songs...)
+	default:
+		return nil // a stale page from before a refresh
+	}
+	m.songsDone = msg.done
+	m.refreshIfShowing(viewSongs)
+	if msg.shuffle {
+		return m.shuffleSongs(append([]subsonic.Song(nil), m.songs...))
+	}
+	if m.songsDone {
+		m.setStatus(plural(len(m.songs), "song"))
+	} else {
+		m.setStatus(plural(len(m.songs), "song") + " loaded, scroll for more")
 	}
 	return nil
 }
@@ -573,21 +599,50 @@ func (m *Model) describeServer() string {
 }
 
 // shufflePlay replaces the queue with the current list's tracks in random
-// order. On the Songs tab that shuffles the whole library.
+// order. On the Songs tab that shuffles the whole library, loading the pages
+// not fetched yet first.
 func (m *Model) shufflePlay() tea.Cmd {
-	songs := m.currentSongs()
-	if len(songs) == 0 {
-		if m.view == viewSongs && m.loading > 0 {
+	if m.view == viewSongs && !m.songsDone && m.mode != modeFilter {
+		if m.songsBusy {
 			m.setStatus("songs are still loading")
-		} else {
-			m.setStatus("no tracks to shuffle here")
+			return nil
 		}
+		m.songsBusy = true
+		m.loading++
+		m.setStatus("loading the whole library to shuffle")
+		return m.loadAllSongs()
+	}
+	return m.shuffleSongs(m.currentSongs())
+}
+
+// shuffleSongs plays songs in random order, replacing the queue.
+func (m *Model) shuffleSongs(songs []subsonic.Song) tea.Cmd {
+	if len(songs) == 0 {
+		m.setStatus("no tracks to shuffle here")
 		return nil
 	}
 	m.rng.Shuffle(len(songs), func(i, j int) { songs[i], songs[j] = songs[j], songs[i] })
 	m.engine.SetQueue(toTracks(m.client, m.cfg.Audio, songs), 0)
 	m.setStatus("shuffling " + plural(len(songs), "track"))
 	return m.ensureCover(coverIDOf(songs[0]))
+}
+
+// moreSongs loads the next page of the Songs tab once the cursor is within
+// a screen of the end of what is loaded.
+func (m *Model) moreSongs() tea.Cmd {
+	l := m.lists[viewSongs]
+	if m.view != viewSongs || m.mode == modeFilter || m.songsDone || m.songsBusy ||
+		l.cursor < len(l.items)-l.height {
+		return nil
+	}
+	return m.requestSongPage(len(m.songs))
+}
+
+// requestSongPage starts loading the page of songs at offset.
+func (m *Model) requestSongPage(offset int) tea.Cmd {
+	m.songsBusy = true
+	m.loading++
+	return m.loadSongPage(offset)
 }
 
 // shuffleQueue randomises the pending part of the queue.

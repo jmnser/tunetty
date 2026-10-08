@@ -381,19 +381,19 @@ func (c *Client) Search(ctx context.Context, query string, o SearchOptions) (*Se
 	return r.Sub.SearchResult, nil
 }
 
-// SongPage is how many songs Songs and AllSongs request per call.
+// SongPage is how many songs AllSongs requests per call.
 const SongPage = 500
 
-// Songs returns up to SongPage songs of the library starting at offset. It
+// Songs returns up to count songs of the library starting at offset. It
 // uses search3 with an empty query, which OpenSubsonic servers such as
 // Navidrome and gonic answer with the whole catalogue. A server without that
 // returns no songs even at offset 0; AllSongs covers that case.
-func (c *Client) Songs(ctx context.Context, offset int) ([]Song, error) {
+func (c *Client) Songs(ctx context.Context, offset, count int) ([]Song, error) {
 	r, err := c.call(ctx, "search3.view", url.Values{
 		"query":       {""},
 		"artistCount": {"0"},
 		"albumCount":  {"0"},
-		"songCount":   {strconv.Itoa(SongPage)},
+		"songCount":   {strconv.Itoa(count)},
 		"songOffset":  {strconv.Itoa(offset)},
 	})
 	if err != nil {
@@ -410,7 +410,7 @@ func (c *Client) Songs(ctx context.Context, offset int) ([]Song, error) {
 func (c *Client) AllSongs(ctx context.Context) ([]Song, error) {
 	var out []Song
 	for offset := 0; ; offset += SongPage {
-		page, err := c.Songs(ctx, offset)
+		page, err := c.Songs(ctx, offset, SongPage)
 		if err != nil {
 			return nil, err
 		}

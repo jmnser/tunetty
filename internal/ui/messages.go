@@ -180,13 +180,16 @@ func (m *Model) loadPlaylist(id string, seq int) tea.Cmd {
 	}
 }
 
+// songsTabPage is how many songs the Songs tab loads at a time.
+const songsTabPage = 50
+
 // loadSongPage fetches one page of the library for the Songs tab. A server
 // that cannot page answers the first request with nothing, and the whole
 // library is loaded the slow way instead.
 func (m *Model) loadSongPage(offset int) tea.Cmd {
 	cl := m.client
 	return func() tea.Msg {
-		songs, err := cl.Songs(context.Background(), offset)
+		songs, err := cl.Songs(context.Background(), offset, songsTabPage)
 		if err != nil {
 			return errMsg{err: err, counted: true}
 		}
@@ -196,7 +199,7 @@ func (m *Model) loadSongPage(offset int) tea.Cmd {
 			}
 			return songsMsg{songs: songs, done: true}
 		}
-		return songsMsg{songs: songs, offset: offset, done: len(songs) < subsonic.SongPage}
+		return songsMsg{songs: songs, offset: offset, done: len(songs) < songsTabPage}
 	}
 }
 

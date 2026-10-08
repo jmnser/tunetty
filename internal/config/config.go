@@ -197,9 +197,7 @@ func Path() (string, error) {
 	return filepath.Join(dir, AppName, "config.toml"), nil
 }
 
-// configDir returns $XDG_CONFIG_HOME or ~/.config. Unlike os.UserConfigDir it
-// does not use ~/Library/Application Support on macOS, where terminal tools
-// are expected under ~/.config too.
+// configDir returns $XDG_CONFIG_HOME or ~/.config.
 func configDir() (string, error) {
 	// The spec says relative values are invalid and must be ignored.
 	if dir := os.Getenv("XDG_CONFIG_HOME"); filepath.IsAbs(dir) {

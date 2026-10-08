@@ -144,6 +144,7 @@ func (m *Model) commandKey(msg tea.KeyMsg) (tea.Cmd, bool) {
 		return tea.Quit, true
 	case key.Matches(msg, m.keys.Help):
 		m.mode = modeHelp
+		m.tmuxHelp = tmuxBindings()
 	case key.Matches(msg, m.keys.Star):
 		return m.toggleStar(), true
 	case key.Matches(msg, m.keys.Refresh):

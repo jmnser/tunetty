@@ -343,6 +343,15 @@ func (m *Model) helpView() string {
 		b.WriteByte('\n')
 	}
 
+	if len(m.tmuxHelp) > 0 {
+		b.WriteString(m.theme.Title.Render("tmux"))
+		b.WriteByte('\n')
+		for _, e := range m.tmuxHelp {
+			b.WriteString("  " + m.theme.Artist.Render(padExact(e.keys, 22)) + m.theme.Dim.Render(e.desc) + "\n")
+		}
+		b.WriteByte('\n')
+	}
+
 	b.WriteString(m.theme.Title.Render("Playback"))
 	b.WriteByte('\n')
 	b.WriteString("  " + m.theme.Dim.Render("output backend: "+m.engine.Backend()) + "\n")

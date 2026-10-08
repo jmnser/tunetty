@@ -30,7 +30,7 @@ func runPasswordCommand(ctx context.Context, cmdline string) (string, error) {
 	// A shell is used deliberately: password managers are normally invoked as
 	// a pipeline, and this value comes from the user's own config file.
 	shell, flag := "/bin/sh", "-c"
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == goosWindows {
 		shell, flag = "cmd", "/C"
 	}
 	cmd := exec.CommandContext(ctx, shell, flag, cmdline) //nolint:gosec // user supplied by design

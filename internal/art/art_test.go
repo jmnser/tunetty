@@ -123,7 +123,7 @@ func TestClearSequence(t *testing.T) {
 		tmux  string
 		want  string
 	}{
-		{"kitty", ProtocolKitty, "", kittyDelete},
+		{"kitty direct", ProtocolKitty, "", kittyDelete},
 		{"kitty in tmux", ProtocolKitty, "/tmp/tmux-1/default,1,0", Capabilities{InTmux: true}.Wrap(kittyDelete)},
 		{"sixel", ProtocolSixel, "", ""},
 		{"blocks", ProtocolHalfBlock, "", ""},
@@ -161,7 +161,7 @@ func TestProtocolFromEnv(t *testing.T) {
 		env  map[string]string
 		want Protocol
 	}{
-		{"kitty", map[string]string{"KITTY_WINDOW_ID": "1"}, ProtocolKitty},
+		{"kitty window id", map[string]string{"KITTY_WINDOW_ID": "1"}, ProtocolKitty},
 		{"iterm2", map[string]string{termProgram: "iTerm.app"}, ProtocolITerm},
 		// VS Code images are off by default, so the environment alone must not
 		// select a graphics protocol.

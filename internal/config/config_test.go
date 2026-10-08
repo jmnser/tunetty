@@ -44,7 +44,7 @@ func TestDurationUnmarshal(t *testing.T) {
 }
 
 func TestPathDefaultsToDotConfig(t *testing.T) {
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == goosWindows {
 		t.Skip("Windows uses %AppData%")
 	}
 	home := t.TempDir()

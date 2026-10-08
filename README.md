@@ -17,7 +17,7 @@ static binary, no ALSA headers, no libopus, no ffmpeg.
   by default; enable with `--art-work`.
 - **Fuzzy finder** — instant local matching over artists, albums and playlists,
   merged with server-side song search as you type.
-- **Pure Go decoding** — Opus ([pion/opus]), MP3, FLAC, Vorbis and WAV.
+- **Pure Go decoding** — Opus (pion/opus), MP3, FLAC, Vorbis and WAV.
 - **No CGO** — verified in CI across linux, darwin and windows on amd64/arm64.
 
 ## Install
@@ -26,7 +26,7 @@ static binary, no ALSA headers, no libopus, no ffmpeg.
 go install github.com/jmnser/tunetty/cmd/tunetty@latest
 ```
 
-Or grab a binary from the [releases page], or build from source:
+Or grab a binary from the releases page, or build from source:
 
 ```sh
 make build      # -> bin/tunetty
@@ -134,8 +134,3 @@ measures zero display columns, so the surrounding layout is unaffected. The
 now-playing band is laid out so the artwork shares its rows only with metadata
 that changes when the track does — the progress bar, which redraws every tick,
 lives on its own row below. That is what stops repaints from eroding the image.
-
-[pion/opus]: https://github.com/pion/opus
-[releases page]: https://github.com/jmnser/tunetty/releases
-[svu]: https://github.com/caarlos0/svu
-[GoReleaser]: https://goreleaser.com

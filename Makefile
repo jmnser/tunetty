@@ -29,8 +29,6 @@ all: build
 build:
 	go build -trimpath -ldflags '$(LDFLAGS)' -o $(BIN)/$(BINARY) $(MAIN)
 
-# install puts the binary into $GOBIN (default ~/go/bin), with the version
-# information a plain `go install` cannot inject.
 install:
 	go install -trimpath -ldflags '$(LDFLAGS)' $(MAIN)
 

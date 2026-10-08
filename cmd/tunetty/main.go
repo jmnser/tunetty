@@ -301,8 +301,8 @@ func writeStarterConfig(cfg config.Config, path string) error {
 		if err := os.WriteFile(tmuxPath, tmuxConf, 0o600); err != nil {
 			return err
 		}
-		fmt.Printf("wrote %s\n\nAdd this line to ~/.tmux.conf for the tmux integration:\n"+
-			"  source-file %s\n\n", tmuxPath, tmuxPath)
+		fmt.Printf("wrote %s\n\nAdd this line to $HOME/.tmux.conf for the tmux integration:\n"+
+			"  source-file \"%s\"\n\n", tmuxPath, homeRelative(tmuxPath))
 	}
 	if configExists {
 		return nil
@@ -322,6 +322,19 @@ func writeStarterConfig(cfg config.Config, path string) error {
 	fmt.Printf("wrote %s\n\nEdit it to set server.url, server.username and either\n"+
 		"server.password or server.password_command, then run tunetty.\n", path)
 	return nil
+}
+
+// homeRelative writes a path under the home directory as $HOME/..., which
+// stays valid in a config file shared between machines.
+func homeRelative(path string) string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return path
+	}
+	if rest, ok := strings.CutPrefix(path, home+string(filepath.Separator)); ok {
+		return "$HOME/" + rest
+	}
+	return path
 }
 
 func exists(path string) bool {

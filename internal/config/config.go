@@ -294,7 +294,9 @@ func applyEnv(c *Config) {
 
 // normalise clamps values that would otherwise break the running player.
 func (c *Config) normalise() {
-	// TOML has no shell, so a leading ~ is expanded here.
+	// TOML has no shell, so $HOME and other variables, and a leading ~, are
+	// expanded here.
+	c.Server.CAFile = os.ExpandEnv(c.Server.CAFile)
 	if rest, ok := strings.CutPrefix(c.Server.CAFile, "~/"); ok {
 		if home, err := os.UserHomeDir(); err == nil {
 			c.Server.CAFile = filepath.Join(home, rest)

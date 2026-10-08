@@ -2,7 +2,7 @@ package ui
 
 import (
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -138,7 +138,6 @@ type Model struct {
 
 	serverInfo  subsonic.ServerInfo
 	lastScrobID string
-	rng         *rand.Rand
 }
 
 // New builds the model.
@@ -160,7 +159,6 @@ func New(o Options) *Model {
 		artRows:    o.Config.Art.Height,
 		serverInfo: o.ServerInfo,
 		stars:      map[string]bool{},
-		rng:        rand.New(rand.NewSource(time.Now().UnixNano())), //nolint:gosec // shuffle order, not security
 	}
 	for v := viewArtists; v <= viewQueue; v++ {
 		m.lists[v] = &itemList{}
@@ -621,7 +619,7 @@ func (m *Model) shuffleSongs(songs []subsonic.Song) tea.Cmd {
 		m.setStatus("no tracks to shuffle here")
 		return nil
 	}
-	m.rng.Shuffle(len(songs), func(i, j int) { songs[i], songs[j] = songs[j], songs[i] })
+	rand.Shuffle(len(songs), func(i, j int) { songs[i], songs[j] = songs[j], songs[i] }) //nolint:gosec // shuffle order, not security
 	m.engine.SetQueue(toTracks(m.client, m.cfg.Audio, songs), 0)
 	m.setStatus("shuffling " + plural(len(songs), "track"))
 	return m.ensureCover(coverIDOf(songs[0]))
@@ -655,7 +653,7 @@ func (m *Model) shuffleQueue() {
 		return
 	}
 	rest := q[from:]
-	m.rng.Shuffle(len(rest), func(i, j int) { rest[i], rest[j] = rest[j], rest[i] })
+	rand.Shuffle(len(rest), func(i, j int) { rest[i], rest[j] = rest[j], rest[i] }) //nolint:gosec // shuffle order, not security
 	// Reordering with Move would fire an event per step, so the queue is
 	// replaced wholesale; the audible track keeps playing throughout.
 	m.engine.ReplaceQueue(append(q[:from:from], rest...))

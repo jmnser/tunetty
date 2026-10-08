@@ -67,7 +67,7 @@ func parseFlags() flags {
 		out := flag.CommandLine.Output()
 		_, _ = fmt.Fprint(out, "tunetty — Subsonic terminal music player\n\n"+
 			"usage: tunetty [flags]\n"+
-			"       tunetty status              print the running player's track, for tmux\n"+
+			"       tunetty status [--bar N]    print the running player's track, for tmux\n"+
 			"       tunetty ctl <command>       control the running player, see 'tunetty ctl'\n\n"+
 			"flags:\n")
 		flag.PrintDefaults()

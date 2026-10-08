@@ -2,6 +2,8 @@ package main
 
 import (
 	"errors"
+	"flag"
+	"io"
 	"fmt"
 	"slices"
 	"strings"
@@ -17,6 +19,12 @@ func runRemote(args []string) (bool, error) {
 	}
 	switch args[0] {
 	case "status":
+		fs := flag.NewFlagSet("status", flag.ContinueOnError)
+		fs.SetOutput(io.Discard)
+		bar := fs.Int("bar", 0, "")
+		if err := fs.Parse(args[1:]); err != nil {
+			return true, fmt.Errorf("%w\nusage: tunetty status [--bar N]", err)
+		}
 		// Meant for tmux's status line: print nothing rather than an error
 		// when no player is running, so the status line just stays empty.
 		s, err := remote.Send(remote.CmdStatus)
@@ -26,7 +34,7 @@ func runRemote(args []string) (bool, error) {
 		if err != nil {
 			return true, err
 		}
-		if line := remote.Format(s); line != "" {
+		if line := remote.Format(s, *bar); line != "" {
 			fmt.Println(line)
 		}
 		return true, nil

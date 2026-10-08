@@ -1,0 +1,10 @@
+# svu configuration — https://github.com/caarlos0/svu
+#
+# While the project is still on 0.x, a breaking-change commit ("feat!:" or a
+# "BREAKING CHANGE:" trailer) must not promote it to 1.0.0: under semver, 0.x
+# makes no stability promise, so breaking changes belong in a minor bump.
+# Without this, `svu next` would answer v1.0.0 for the first such commit.
+#
+# This only constrains the automatic path (`svu next`). The explicit
+# `svu major` ignores it, which is why the Makefile guards that separately.
+v0: true

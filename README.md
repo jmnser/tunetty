@@ -59,6 +59,6 @@ username = "alice"
 password_command = "pass show music/subsonic"
 ```
 
-## Keys
+## Keymaps
 
 Press `?` in the app for the full list.

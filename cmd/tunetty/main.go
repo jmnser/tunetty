@@ -3,11 +3,13 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"errors"
 	"flag"
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -278,9 +280,32 @@ func doctor(cfg config.Config, path string, missing bool) error {
 	return nil
 }
 
+// tmuxConf is the tmux integration written next to the config by -init.
+//
+//go:embed tmux.conf
+var tmuxConf []byte
+
+// writeStarterConfig writes the config file and the tmux integration next to
+// it, each only if it does not exist yet, so -init also adds the tmux file to
+// an existing setup.
 func writeStarterConfig(cfg config.Config, path string) error {
-	if _, err := os.Stat(path); err == nil {
-		return fmt.Errorf("refusing to overwrite existing config at %s", path)
+	tmuxPath := filepath.Join(filepath.Dir(path), "tmux.conf")
+	configExists, tmuxExists := exists(path), exists(tmuxPath)
+	if configExists && tmuxExists {
+		return fmt.Errorf("refusing to overwrite existing %s and %s", path, tmuxPath)
+	}
+	if !tmuxExists {
+		if err := os.MkdirAll(filepath.Dir(tmuxPath), 0o700); err != nil {
+			return err
+		}
+		if err := os.WriteFile(tmuxPath, tmuxConf, 0o600); err != nil {
+			return err
+		}
+		fmt.Printf("wrote %s\n\nAdd this line to ~/.tmux.conf for the tmux integration:\n"+
+			"  source-file %s\n\n", tmuxPath, tmuxPath)
+	}
+	if configExists {
+		return nil
 	}
 	if cfg.Server.URL == "" {
 		cfg.Server.URL = "https://music.example.com"
@@ -297,6 +322,11 @@ func writeStarterConfig(cfg config.Config, path string) error {
 	fmt.Printf("wrote %s\n\nEdit it to set server.url, server.username and either\n"+
 		"server.password or server.password_command, then run tunetty.\n", path)
 	return nil
+}
+
+func exists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
 }
 
 func orNone(s string) string {

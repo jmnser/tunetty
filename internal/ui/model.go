@@ -385,8 +385,9 @@ func (m *Model) layout() {
 	if m.artRows > maxArtRows {
 		m.artRows = maxArtRows
 	}
-	if m.width < 60 || m.height < 16 {
-		// Too cramped for artwork; the now playing band collapses to text.
+	if m.width < 60 || m.height < 16 || m.renderer.Protocol() == art.ProtocolNone {
+		// Too cramped for artwork, or art is off; the now playing band
+		// collapses to text.
 		m.artCols, m.artRows = 0, 0
 	}
 

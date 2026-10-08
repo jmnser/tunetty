@@ -2,8 +2,8 @@
 
 Subsonic-compatible terminal music player written in Go.
 
-Album art in the terminal, gapless playback, and a fuzzy finder over your whole
-library. Builds with `CGO_ENABLED=0` on every supported platform — a single
+Gapless playback, a fuzzy finder over your whole library, and experimental album
+art in the terminal. Builds with `CGO_ENABLED=0` on every supported platform — a single
 static binary, no ALSA headers, no libopus, no ffmpeg.
 
 ## Features
@@ -12,8 +12,9 @@ static binary, no ALSA headers, no libopus, no ffmpeg.
   starred items, server-side search, scrobbling, favourites.
 - **Gapless playback** — consecutive tracks are spliced sample-exactly. The
   output device is opened once and never torn down between tracks.
-- **Album art in the terminal** — kitty graphics, iTerm2 inline images, sixel,
-  or Unicode half blocks. Works inside tmux via passthrough.
+- **Album art in the terminal (experimental)** — kitty graphics, iTerm2 inline
+  images, sixel, or Unicode half blocks. Works inside tmux via passthrough. Off
+  by default; enable with `--art-work`.
 - **Fuzzy finder** — instant local matching over artists, albums and playlists,
   merged with server-side song search as you type.
 - **Pure Go decoding** — Opus ([pion/opus]), MP3, FLAC, Vorbis and WAV.
@@ -79,7 +80,7 @@ network_buffer = 1048576  # per-stream read-ahead, bytes
 volume         = 0.7      # startup volume, 0 to 1
 scrobble       = true
 
-[art]
+[art]                       # only used with --art-work
 protocol         = "auto" # auto | kitty | iterm2 | sixel | blocks | none
 width            = 32     # cover size in terminal cells
 height           = 16
@@ -167,7 +168,10 @@ Linux deliberately does not use oto: its ALSA backend needs CGO. The PulseAudio
 wire protocol is implemented in pure Go and PipeWire's compatibility layer
 speaks it, which covers essentially every modern desktop.
 
-### Album art
+### Album art (experimental)
+
+Off by default. Start with `tunetty --art-work` to enable it; `--art <protocol>`
+then forces a protocol instead of detecting one.
 
 The protocol is detected from the environment, then confirmed by querying the
 terminal (a kitty graphics query, `CSI 16 t` for cell geometry, and primary

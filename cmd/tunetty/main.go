@@ -41,6 +41,7 @@ type flags struct {
 	user        string
 	backend     string
 	artProto    string
+	artWork     bool
 	showVersion bool
 	doctor      bool
 	writeConfig bool
@@ -53,7 +54,8 @@ func parseFlags() flags {
 	flag.StringVar(&f.user, "user", "", "username (overrides config)")
 	backends := strings.Join(audio.AvailableBackends(), ", ")
 	flag.StringVar(&f.backend, "audio-backend", "", "audio backend: auto, "+backends)
-	flag.StringVar(&f.artProto, "art", "", "cover art protocol: auto, kitty, iterm2, sixel, blocks, none")
+	flag.BoolVar(&f.artWork, "art-work", false, "enable cover art (experimental)")
+	flag.StringVar(&f.artProto, "art", "", "cover art protocol with -art-work: auto, kitty, iterm2, sixel, blocks")
 	flag.BoolVar(&f.showVersion, "version", false, "print version and exit")
 	flag.BoolVar(&f.doctor, "doctor", false, "report terminal and audio capabilities, then exit")
 	flag.BoolVar(&f.writeConfig, "init", false, "write a starter config file and exit")
@@ -101,6 +103,12 @@ func run() error {
 	}
 	if f.artProto != "" {
 		cfg.Art.Protocol = f.artProto
+	}
+	// Cover art is experimental and off unless asked for. Disabling it also
+	// skips the terminal probe and the tmux passthrough change at startup.
+	if !f.artWork {
+		cfg.Art.Protocol = string(art.ProtocolNone)
+		cfg.Art.TmuxPassthrough = false
 	}
 
 	if f.writeConfig {
@@ -220,6 +228,9 @@ func doctor(cfg config.Config, path string, missing bool) error {
 	fmt.Printf("  TERM              %s\n", orNone(os.Getenv("TERM")))
 	fmt.Printf("  TERM_PROGRAM      %s\n", orNone(os.Getenv("TERM_PROGRAM")))
 	fmt.Printf("  graphics          %s\n", caps.Protocol)
+	if art.Protocol(cfg.Art.Protocol) == art.ProtocolNone {
+		fmt.Println("  cover art         off (experimental, enable with --art-work)")
+	}
 	fmt.Printf("  cell size         %dx%d px\n", caps.CellWidth, caps.CellHeight)
 	fmt.Printf("  truecolor         %v\n", caps.TrueColor)
 	fmt.Printf("  tmux              %v\n", caps.InTmux)

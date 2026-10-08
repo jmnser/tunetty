@@ -2,9 +2,8 @@
 
 Subsonic-compatible terminal music player written in Go.
 
-Gapless playback, a fuzzy finder over your whole library, and experimental album
-art in the terminal. A single static binary built with `CGO_ENABLED=0`: no ALSA
-headers, no libopus, no ffmpeg.
+Gapless playback, a fuzzy finder over your whole library, experimental album
+art in the terminal and a single static binary.
 
 ## Features
 

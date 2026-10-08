@@ -60,6 +60,17 @@ username = "alice"
 password_command = "pass show music/subsonic"
 ```
 
+## tmux
+
+`tunetty status` prints the playing track, `tunetty ctl <command>` controls
+the running player (`tunetty ctl` lists the commands). `contrib/tunetty.tmux`
+puts both into tmux, with a status line entry, `F7`–`F12` media keys and a popup
+on `prefix + M`:
+
+```tmux
+source-file /path/to/tunetty/contrib/tunetty.tmux
+```
+
 ## Keymaps
 
 Press `?` in the app for the full list.

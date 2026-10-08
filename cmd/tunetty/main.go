@@ -17,6 +17,7 @@ import (
 	"github.com/jmnser/tunetty/internal/art"
 	"github.com/jmnser/tunetty/internal/audio"
 	"github.com/jmnser/tunetty/internal/config"
+	"github.com/jmnser/tunetty/internal/remote"
 	"github.com/jmnser/tunetty/internal/subsonic"
 	"github.com/jmnser/tunetty/internal/ui"
 )
@@ -62,7 +63,11 @@ func parseFlags() flags {
 
 	flag.Usage = func() {
 		out := flag.CommandLine.Output()
-		_, _ = fmt.Fprint(out, "tunetty — Subsonic terminal music player\n\nusage: tunetty [flags]\n\nflags:\n")
+		_, _ = fmt.Fprint(out, "tunetty — Subsonic terminal music player\n\n"+
+			"usage: tunetty [flags]\n"+
+			"       tunetty status              print the running player's track, for tmux\n"+
+			"       tunetty ctl <command>       control the running player, see 'tunetty ctl'\n\n"+
+			"flags:\n")
 		flag.PrintDefaults()
 		_, _ = fmt.Fprint(out, "\nenvironment:\n"+
 			"  TUNETTY_CONFIG          config file path\n"+
@@ -78,6 +83,9 @@ func parseFlags() flags {
 }
 
 func run() error {
+	if handled, err := runRemote(os.Args[1:]); handled {
+		return err
+	}
 	f := parseFlags()
 
 	if f.showVersion {
@@ -184,6 +192,16 @@ func start(cfg config.Config) error {
 		return fmt.Errorf("opening audio output: %w", err)
 	}
 	defer func() { _ = engine.Close() }()
+
+	// The control socket backs `tunetty status` and `tunetty ctl`. Only the
+	// first instance serves it; later ones play without it.
+	srv, err := remote.Listen(engine, remote.Steps{Seek: cfg.UI.SeekStep.D(), Volume: cfg.UI.VolumeStep})
+	switch {
+	case err == nil:
+		defer func() { _ = srv.Close() }()
+	case !errors.Is(err, remote.ErrInUse):
+		return err
+	}
 
 	model := ui.New(ui.Options{
 		Client:     client,

@@ -49,8 +49,8 @@ If something doesn't work, `tunetty -doctor` shows what was detected.
 
 ## Configuration
 
-`~/.config/tunetty/config.toml` (`%AppData%\tunetty\config.toml` on Windows,
-override with `TUNETTY_CONFIG`).
+`~/.config/tunetty/config.toml` (override with `TUNETTY_CONFIG`). Run
+`tunetty -init` to create a starter config.
 
 ```toml
 [server]

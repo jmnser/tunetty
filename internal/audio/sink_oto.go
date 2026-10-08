@@ -1,4 +1,4 @@
-//go:build darwin || windows || js
+//go:build darwin
 
 package audio
 
@@ -8,8 +8,7 @@ import (
 	"github.com/ebitengine/oto/v3"
 )
 
-// oto drives CoreAudio on macOS and WASAPI on Windows through purego, so it
-// links without CGO. On Linux oto needs ALSA via CGO, which is why that
+// oto drives CoreAudio on macOS through purego, so it links without CGO. On Linux oto needs ALSA via CGO, which is why that
 // platform uses the PulseAudio backend instead.
 func init() {
 	nativeSinks = append(nativeSinks, sinkFactory{name: "oto", open: openOtoSink})

@@ -25,6 +25,7 @@ Or download a binary from the releases page, or build from source:
 
 ```sh
 make build      # -> bin/tunetty
+make install    # -> $GOBIN/tunetty
 ```
 
 ## Quick start

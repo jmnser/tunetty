@@ -21,13 +21,18 @@ LDFLAGS := -s -w \
 
 export CGO_ENABLED = 0
 
-.PHONY: all build test lint fmt tidy version snapshot clean \
+.PHONY: all build install test lint fmt tidy version snapshot clean \
 	release-patch release-minor release-major
 
 all: build
 
 build:
 	go build -trimpath -ldflags '$(LDFLAGS)' -o $(BIN)/$(BINARY) $(MAIN)
+
+# install puts the binary into $GOBIN (default ~/go/bin), with the version
+# information a plain `go install` cannot inject.
+install:
+	go install -trimpath -ldflags '$(LDFLAGS)' $(MAIN)
 
 test:
 	go test ./...

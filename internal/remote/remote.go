@@ -205,8 +205,10 @@ func Send(cmd string) (*Status, error) {
 }
 
 // Format renders a status for a status line, e.g. "▶ Artist – Title 1:23/4:05".
-// A stopped player renders as an empty string so the status line stays clean.
-func Format(s *Status) string {
+// A bar width above zero adds a progress bar of that many cells before the
+// times. A stopped player renders as an empty string so the status line
+// stays clean.
+func Format(s *Status, bar int) string {
 	if s == nil || s.State == audio.StateStopped.String() || s.Title == "" {
 		return ""
 	}
@@ -218,7 +220,20 @@ func Format(s *Status) string {
 	if s.Artist != "" {
 		name = s.Artist + " – " + s.Title
 	}
-	return fmt.Sprintf("%s %s %s/%s", icon, name, clock(s.Position), clock(s.Duration))
+	times := clock(s.Position) + "/" + clock(s.Duration)
+	if bar > 0 {
+		times = progress(s.Position, s.Duration, bar) + " " + times
+	}
+	return icon + " " + name + " " + times
+}
+
+// progress draws a bar of width cells filled by pos/total.
+func progress(pos, total time.Duration, width int) string {
+	filled := 0
+	if total > 0 {
+		filled = min(width, int(int64(width)*int64(pos)/int64(total)))
+	}
+	return strings.Repeat("━", filled) + strings.Repeat("─", width-filled)
 }
 
 func clock(d time.Duration) string {

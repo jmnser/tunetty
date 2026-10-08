@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -19,9 +18,6 @@ const AppName = "tunetty"
 
 // autoValue selects automatic detection for a setting.
 const autoValue = "auto"
-
-// goosWindows is runtime.GOOS on Windows, which keeps its own config dir and shell.
-const goosWindows = "windows"
 
 // Config is the on disk configuration.
 type Config struct {
@@ -203,11 +199,8 @@ func Path() (string, error) {
 
 // configDir returns $XDG_CONFIG_HOME or ~/.config. Unlike os.UserConfigDir it
 // does not use ~/Library/Application Support on macOS, where terminal tools
-// are expected under ~/.config too. Windows keeps %AppData%.
+// are expected under ~/.config too.
 func configDir() (string, error) {
-	if runtime.GOOS == goosWindows {
-		return os.UserConfigDir()
-	}
 	// The spec says relative values are invalid and must be ignored.
 	if dir := os.Getenv("XDG_CONFIG_HOME"); filepath.IsAbs(dir) {
 		return dir, nil

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
-	"runtime"
 	"strings"
 	"time"
 )
@@ -21,19 +20,15 @@ func (c Config) ResolvePassword(ctx context.Context) (string, error) {
 	return c.Server.Password, nil
 }
 
-// runPasswordCommand executes cmdline through the system shell (/bin/sh, or
-// cmd on Windows) and returns its first line of output.
+// runPasswordCommand executes cmdline through /bin/sh and returns its first
+// line of output.
 func runPasswordCommand(ctx context.Context, cmdline string) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
 	// A shell is used deliberately: password managers are normally invoked as
 	// a pipeline, and this value comes from the user's own config file.
-	shell, flag := "/bin/sh", "-c"
-	if runtime.GOOS == goosWindows {
-		shell, flag = "cmd", "/C"
-	}
-	cmd := exec.CommandContext(ctx, shell, flag, cmdline) //nolint:gosec // user supplied by design
+	cmd := exec.CommandContext(ctx, "/bin/sh", "-c", cmdline) //nolint:gosec // user supplied by design
 	out, err := cmd.Output()
 	if err != nil {
 		var ee *exec.ExitError

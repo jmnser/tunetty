@@ -6,6 +6,8 @@ import (
 	"context"
 	"crypto/md5" //nolint:gosec // mandated by the Subsonic authentication scheme
 	"crypto/rand"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -14,6 +16,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -47,6 +50,11 @@ type Options struct {
 	Timeout time.Duration
 	// UserAgent overrides the request user agent.
 	UserAgent string
+	// CAFile is a PEM file whose certificates are trusted in addition to the
+	// system roots, e.g. a self-signed server certificate. Ignored with HTTP.
+	CAFile string
+	// InsecureSkipVerify disables certificate verification. Ignored with HTTP.
+	InsecureSkipVerify bool
 }
 
 // Client talks to a Subsonic compatible server.
@@ -82,7 +90,11 @@ func New(o Options) (*Client, error) {
 	}
 	hc := o.HTTP
 	if hc == nil {
-		hc = defaultHTTPClient(timeout)
+		tc, err := tlsConfig(o.CAFile, o.InsecureSkipVerify)
+		if err != nil {
+			return nil, err
+		}
+		hc = defaultHTTPClient(timeout, tc)
 	}
 	ua := o.UserAgent
 	if ua == "" {
@@ -97,12 +109,41 @@ func New(o Options) (*Client, error) {
 // defaultHTTPClient has no client-wide timeout, which would also cover reading
 // the body and so abort any stream longer than it. Connection setup and the
 // wait for headers are bounded instead; API calls get a per request deadline.
-func defaultHTTPClient(timeout time.Duration) *http.Client {
+func defaultHTTPClient(timeout time.Duration, tc *tls.Config) *http.Client {
 	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.TLSClientConfig = tc
 	tr.DialContext = (&net.Dialer{Timeout: timeout, KeepAlive: 30 * time.Second}).DialContext
 	tr.TLSHandshakeTimeout = timeout
 	tr.ResponseHeaderTimeout = timeout
 	return &http.Client{Transport: tr}
+}
+
+// tlsConfig trusts the certificates in caFile on top of the system roots, or
+// skips verification entirely when insecure is set.
+func tlsConfig(caFile string, insecure bool) (*tls.Config, error) {
+	tc := &tls.Config{MinVersion: tls.VersionTLS12}
+	if insecure {
+		tc.InsecureSkipVerify = true //nolint:gosec // explicit user opt-in for self-signed servers
+		return tc, nil
+	}
+	if caFile == "" {
+		return tc, nil
+	}
+	pem, err := os.ReadFile(caFile) //nolint:gosec // the path is user supplied by design
+	if err != nil {
+		return nil, fmt.Errorf("subsonic: reading ca_file: %w", err)
+	}
+	// A container without system roots yields an error here; the file alone
+	// is then enough.
+	pool, err := x509.SystemCertPool()
+	if err != nil {
+		pool = x509.NewCertPool()
+	}
+	if !pool.AppendCertsFromPEM(pem) {
+		return nil, fmt.Errorf("subsonic: no PEM certificates in %s", caFile)
+	}
+	tc.RootCAs = pool
+	return tc, nil
 }
 
 // BaseURL returns the configured server root.

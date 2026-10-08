@@ -47,6 +47,12 @@ type Server struct {
 	// PlainAuth sends the password in clear instead of the salted token some
 	// servers reject. Only enable over HTTPS.
 	PlainAuth bool `toml:"plain_auth"`
+	// CAFile is a PEM file with extra certificates to trust, such as a
+	// self-signed server certificate or a private CA. Verification stays on.
+	CAFile string `toml:"ca_file"`
+	// InsecureSkipVerify accepts any server certificate. Prefer CAFile: this
+	// leaves the connection, and the credentials in it, open to interception.
+	InsecureSkipVerify bool `toml:"insecure_skip_verify"`
 	// Timeout bounds individual API calls.
 	Timeout Duration `toml:"timeout"`
 }
@@ -272,6 +278,12 @@ func applyEnv(c *Config) {
 		c.Server.Password = v
 		c.Server.PasswordCommand = ""
 	}
+	if v := os.Getenv("TUNETTY_CA_FILE"); v != "" {
+		c.Server.CAFile = v
+	}
+	if v, err := strconv.ParseBool(os.Getenv("TUNETTY_INSECURE_SKIP_VERIFY")); err == nil {
+		c.Server.InsecureSkipVerify = v
+	}
 	if v := os.Getenv("TUNETTY_AUDIO_BACKEND"); v != "" {
 		c.Audio.Backend = v
 	}
@@ -282,6 +294,12 @@ func applyEnv(c *Config) {
 
 // normalise clamps values that would otherwise break the running player.
 func (c *Config) normalise() {
+	// TOML has no shell, so a leading ~ is expanded here.
+	if rest, ok := strings.CutPrefix(c.Server.CAFile, "~/"); ok {
+		if home, err := os.UserHomeDir(); err == nil {
+			c.Server.CAFile = filepath.Join(home, rest)
+		}
+	}
 	if c.Audio.Backend == "" {
 		c.Audio.Backend = autoValue
 	}

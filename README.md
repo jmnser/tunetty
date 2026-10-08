@@ -66,6 +66,8 @@ username = "alice"
 password_command = "pass show music/subsonic"
 # password = "..."          # or set it directly; password_command wins if both are set
 # plain_auth = false        # only if your server rejects token auth
+# ca_file = "~/.config/tunetty/server.pem"  # trust a self-signed cert or private CA
+# insecure_skip_verify = false              # skip TLS verification; prefer ca_file
 timeout = "30s"             # per API call; audio streams are not cut off
 
 [audio]
@@ -99,7 +101,8 @@ volume_step = 0.05
 
 Environment overrides: `TUNETTY_CONFIG`, `TUNETTY_SERVER`, `TUNETTY_USERNAME`,
 `TUNETTY_PASSWORD`, `TUNETTY_AUDIO_BACKEND`, `TUNETTY_ART_PROTOCOL`,
-`TUNETTY_AUDIO_COMMAND`. They take precedence over the file; in particular
+`TUNETTY_AUDIO_COMMAND`, `TUNETTY_CA_FILE`, `TUNETTY_INSECURE_SKIP_VERIFY`
+(`true`/`false`). They take precedence over the file; in particular
 `TUNETTY_PASSWORD` replaces both `password` and `password_command`.
 `password_command` runs through `/bin/sh -c` (`cmd /C` on Windows).
 

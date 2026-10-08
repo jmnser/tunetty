@@ -139,6 +139,9 @@ func start(cfg config.Config) error {
 		PlainAuth: cfg.Server.PlainAuth,
 		UserAgent: "tunetty/" + version,
 		Timeout:   cfg.Server.Timeout.D(),
+
+		CAFile:             cfg.Server.CAFile,
+		InsecureSkipVerify: cfg.Server.InsecureSkipVerify,
 	})
 	if err != nil {
 		return err

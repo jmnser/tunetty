@@ -107,66 +107,11 @@ Environment overrides: `TUNETTY_CONFIG`, `TUNETTY_SERVER`, `TUNETTY_USERNAME`,
 `TUNETTY_PASSWORD` replaces both `password` and `password_command`.
 `password_command` runs through `/bin/sh -c` (`cmd /C` on Windows).
 
-## Keys
-
-| Key | Action |
-| --- | --- |
-| `↑`/`k`, `↓`/`j` | move |
-| `enter` | open / play |
-| `esc`, `h` | back |
-| `tab` / `shift+tab` | switch view |
-| `space` | play / pause |
-| `n` / `b` | next / previous track |
-| `[` / `]` | seek back / forward |
-| `-` / `+` | volume |
-| `m` | mute |
-| `r` | cycle repeat off → all → one |
-| `a` / `A` | queue / play next |
-| `x` / `X` | remove from queue / clear queue |
-| `z` | shuffle upcoming tracks |
-| `S` | shuffle play the current list (on Songs: the whole library) |
-| `*` | star |
-| `f` | fuzzy find |
-| `/` | filter the current list |
-| `?` | help |
-| `Q` | quit |
+## Help Keys
 
 Press `?` in the app for the full list, including the active audio backend and
 cover art protocol.
 
-## How it works
-
-### Gapless playback
-
-A decode pump goroutine keeps a PCM ring buffer full while the audio callback
-drains it. Everything is resampled to a fixed 48 kHz stereo mixing format, so
-the output device is opened once at startup and never reopened.
-
-When a track ends, the pump opens the next one and writes its samples directly
-behind the previous track's — no drain, no device reset, no silence. The ring
-holds several seconds of audio, which is the window available for opening the
-next stream, so the join stays gapless even on a slow server. Track boundaries
-travel through the ring as markers, so the UI and scrobbler report the track
-that is *audible* rather than the one being decoded ahead of it.
-
-`internal/audio` has a test that queues two tracks and asserts the captured
-output is continuous across the boundary, sample for sample.
-
-### Audio output without CGO
-
-| Platform | Backend | Mechanism |
-| --- | --- | --- |
-| macOS, Windows | `oto` | CoreAudio / WASAPI through purego |
-| Linux | `pulse` | PulseAudio / PipeWire protocol over a unix socket, pure Go |
-| anywhere | `command` | pipes float32 PCM to `pw-cat`, `paplay`, `ffplay`, `aplay` or `sox` |
-
-Backends are tried in that order and the first that opens wins. Set
-`TUNETTY_AUDIO_COMMAND` to pipe into any player that accepts raw float32
-little-endian PCM on stdin.
-
-Linux deliberately does not use oto: its ALSA backend needs CGO. The PulseAudio
-wire protocol is implemented in pure Go and PipeWire's compatibility layer
-speaks it, which covers essentially every modern desktop.
 
 ### Album art (experimental)
 
@@ -189,35 +134,6 @@ measures zero display columns, so the surrounding layout is unaffected. The
 now-playing band is laid out so the artwork shares its rows only with metadata
 that changes when the track does — the progress bar, which redraws every tick,
 lives on its own row below. That is what stops repaints from eroding the image.
-
-## Development
-
-```sh
-make test        # go test ./...
-make lint        # golangci-lint run ./...
-make snapshot    # goreleaser release --snapshot --clean
-make version     # svu current  (requires svu)
-```
-
-CI enforces the no-CGO constraint with a cross-compile matrix over
-linux/darwin/windows × amd64/arm64.
-
-Releases are tagged with [svu] and built by [GoReleaser]; `make release-patch`
-(or `-minor` / `-major`) creates the annotated tag and prints the push command.
-
-While the project is on 0.x it stays there. `.svu.yml` sets `v0: true`, so a
-breaking-change commit makes `svu next` answer v0.2.0 rather than v1.0.0 —
-under semver 0.x promises no stability, so breaking changes are a minor bump.
-`svu major` ignores that setting, so `make release-major` refuses to leave 0.x
-unless you say so explicitly:
-
-```sh
-make release-major ALLOW_V1=1
-```
-
-## Licence
-
-MIT
 
 [pion/opus]: https://github.com/pion/opus
 [releases page]: https://github.com/jmnser/tunetty/releases

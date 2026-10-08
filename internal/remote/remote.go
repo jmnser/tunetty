@@ -220,9 +220,15 @@ func Format(s *Status, bar int) string {
 	if s.Artist != "" {
 		name = s.Artist + " – " + s.Title
 	}
-	times := clock(s.Position) + "/" + clock(s.Duration)
+	// The server's track length can be a little shorter than the audio, so
+	// the position is capped to keep "3:47/3:43" off the status line.
+	pos := s.Position
+	if s.Duration > 0 {
+		pos = min(pos, s.Duration)
+	}
+	times := clock(pos) + "/" + clock(s.Duration)
 	if bar > 0 {
-		times = progress(s.Position, s.Duration, bar) + " " + times
+		times = progress(pos, s.Duration, bar) + " " + times
 	}
 	return icon + " " + name + " " + times
 }

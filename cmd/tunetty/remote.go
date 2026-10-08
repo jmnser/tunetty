@@ -3,8 +3,8 @@ package main
 import (
 	"errors"
 	"flag"
-	"io"
 	"fmt"
+	"io"
 	"slices"
 	"strings"
 

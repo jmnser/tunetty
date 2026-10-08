@@ -116,9 +116,9 @@ func (m *Model) playbackKey(msg tea.KeyMsg) (tea.Cmd, bool) {
 func (m *Model) queueKey(msg tea.KeyMsg) (tea.Cmd, bool) {
 	switch {
 	case key.Matches(msg, m.keys.AddQueue):
-		return m.enqueueSelection(false), true
-	case key.Matches(msg, m.keys.PlayNext):
 		return m.enqueueSelection(true), true
+	case key.Matches(msg, m.keys.AddEnd):
+		return m.enqueueSelection(false), true
 	case key.Matches(msg, m.keys.Shuffle):
 		m.shuffleQueue()
 	case key.Matches(msg, m.keys.ShufflePlay):
@@ -466,10 +466,10 @@ func (m *Model) enqueueSelection(next bool) tea.Cmd {
 		tracks := toTracks(m.client, m.cfg.Audio, []subsonic.Song{data})
 		if next {
 			m.engine.InsertNext(tracks...)
-			m.setStatus("playing next: " + displayTitle(data))
+			m.setStatus("queued next: " + displayTitle(data))
 		} else {
 			m.engine.Enqueue(tracks...)
-			m.setStatus("queued " + displayTitle(data))
+			m.setStatus("queued at end: " + displayTitle(data))
 		}
 		return nil
 

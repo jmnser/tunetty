@@ -35,7 +35,7 @@ type KeyMap struct {
 	ShufflePlay key.Binding
 	Queue       key.Binding
 	AddQueue    key.Binding
-	PlayNext    key.Binding
+	AddEnd      key.Binding
 	Remove      key.Binding
 	ClearQueue  key.Binding
 	Star        key.Binding
@@ -72,8 +72,8 @@ func DefaultKeys(kb config.Keybinds) KeyMap {
 		Shuffle:     bind([]string{"z"}, "z", "shuffle queue"),
 		ShufflePlay: bind([]string{"S"}, "S", "shuffle play list"),
 		Queue:       bind([]string{"q"}, "q", "queue view"),
-		AddQueue:    bind([]string{"a"}, "a", "add to queue"),
-		PlayNext:    bind([]string{"A"}, "A", "play next"),
+		AddQueue:    bind([]string{"a"}, "a", "add to queue as next"),
+		AddEnd:      bind([]string{"A"}, "A", "add to end of queue"),
 		Remove:      bind([]string{"x", "delete"}, "x", "remove"),
 		ClearQueue:  bind([]string{"X"}, "X", "clear queue"),
 		Star:        bind([]string{"*"}, "*", "star"),
@@ -149,7 +149,7 @@ func (k KeyMap) HelpSections() []struct {
 			e(k.Mute), e(k.Repeat),
 		}},
 		{"Queue", []helpEntry{
-			e(k.AddQueue), e(k.PlayNext), e(k.Remove), e(k.ClearQueue), e(k.Shuffle), e(k.ShufflePlay), e(k.Queue),
+			e(k.AddQueue), e(k.AddEnd), e(k.Remove), e(k.ClearQueue), e(k.Shuffle), e(k.ShufflePlay), e(k.Queue),
 		}},
 		{"Other", []helpEntry{
 			e(k.Find), e(k.Filter), e(k.Star), e(k.Refresh), e(k.Help), e(k.Quit),

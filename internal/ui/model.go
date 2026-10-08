@@ -366,11 +366,11 @@ func (m *Model) applyEnqueue(msg enqueueMsg) tea.Cmd {
 	tracks := toTracks(m.client, m.cfg.Audio, msg.songs)
 	if msg.next {
 		m.engine.InsertNext(tracks...)
-		m.setStatus(fmt.Sprintf("playing next: %s (%s)", msg.label, plural(len(tracks), "track")))
+		m.setStatus(fmt.Sprintf("queued next: %s (%s)", msg.label, plural(len(tracks), "track")))
 		return nil
 	}
 	m.engine.Enqueue(tracks...)
-	m.setStatus(fmt.Sprintf("queued %s (%s)", msg.label, plural(len(tracks), "track")))
+	m.setStatus(fmt.Sprintf("queued at end: %s (%s)", msg.label, plural(len(tracks), "track")))
 	return nil
 }
 

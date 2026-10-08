@@ -139,6 +139,10 @@ func (c *Config) applyDefaults() {
 type entry struct {
 	id    uint64
 	track Track
+	// queuedNext marks an entry added with InsertNext. Later inserts go
+	// behind the run of such entries after the audible track, so tracks
+	// queued as next keep the order they were added in.
+	queuedNext bool
 }
 
 // seqInfo remembers which queue entry a ring mark belongs to. entry 0 is the
@@ -385,7 +389,8 @@ func (e *Engine) Enqueue(tracks ...Track) {
 	e.insert(-1, tracks)
 }
 
-// InsertNext places tracks immediately after the audible track.
+// InsertNext places tracks after the audible track, behind any tracks
+// inserted the same way that are still waiting to play.
 func (e *Engine) InsertNext(tracks ...Track) {
 	e.insert(0, tracks)
 }
@@ -395,10 +400,17 @@ func (e *Engine) insert(where int, tracks []Track) {
 	e.mu.Lock()
 	evs := e.syncAudibleLocked()
 	at := len(e.queue)
+	added := e.newEntriesLocked(tracks)
 	if where >= 0 {
 		at = min(e.indexLocked(e.audible)+1, len(e.queue))
+		for e.audible != 0 && at < len(e.queue) && e.queue[at].queuedNext {
+			at++
+		}
+		for i := range added {
+			added[i].queuedNext = true
+		}
 	}
-	e.queue = slices.Insert(e.queue, at, e.newEntriesLocked(tracks)...)
+	e.queue = slices.Insert(e.queue, at, added...)
 	idle := e.state == StateStopped && len(tracks) > 0
 	if idle {
 		evs = append(evs, e.interruptLocked()...)

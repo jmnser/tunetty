@@ -40,6 +40,9 @@ func (m *Model) buildItems() []listItem {
 		}
 		return m.albumItems(m.albums)
 
+	case viewSongs:
+		return m.songItems(m.songs, false)
+
 	case viewPlaylists:
 		if m.level == levelTracks && m.crumbList != nil {
 			return m.songItems(m.crumbList.Entry, false)

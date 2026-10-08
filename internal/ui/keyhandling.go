@@ -121,6 +121,8 @@ func (m *Model) queueKey(msg tea.KeyMsg) (tea.Cmd, bool) {
 		return m.enqueueSelection(true), true
 	case key.Matches(msg, m.keys.Shuffle):
 		m.shuffleQueue()
+	case key.Matches(msg, m.keys.ShufflePlay):
+		return m.shufflePlay(), true
 	case key.Matches(msg, m.keys.Remove):
 		if it, ok := m.lists[viewQueue].selected(); ok && m.view == viewQueue {
 			m.engine.RemoveAt(it.QueueIndex)
@@ -322,6 +324,11 @@ func (m *Model) switchView(v view) tea.Cmd {
 			m.loading++
 			return m.loadStarred()
 		}
+	case viewSongs:
+		if m.songs == nil {
+			m.loading++
+			return m.loadSongs()
+		}
 	case viewAlbums:
 		if len(m.albums) == 0 {
 			m.loading++
@@ -413,6 +420,8 @@ func (m *Model) refreshCurrent() tea.Cmd {
 		return m.loadAlbums(subsonic.AlbumsNewest, m.cfg.UI.PageSize)
 	case viewPlaylists:
 		return m.loadPlaylists()
+	case viewSongs:
+		return m.loadSongs()
 	case viewStarred:
 		return m.loadStarred()
 	}

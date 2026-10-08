@@ -340,6 +340,63 @@ func (c *Client) Search(ctx context.Context, query string, o SearchOptions) (*Se
 	return r.Sub.SearchResult, nil
 }
 
+// songPage is how many songs AllSongs requests per call.
+const songPage = 500
+
+// AllSongs returns every song in the library. It pages through search3 with
+// an empty query, which OpenSubsonic servers such as Navidrome and gonic
+// answer with the whole catalogue. Servers that return nothing for an empty
+// query are walked album by album instead.
+func (c *Client) AllSongs(ctx context.Context) ([]Song, error) {
+	var out []Song
+	for offset := 0; ; offset += songPage {
+		r, err := c.call(ctx, "search3.view", url.Values{
+			"query":       {""},
+			"artistCount": {"0"},
+			"albumCount":  {"0"},
+			"songCount":   {strconv.Itoa(songPage)},
+			"songOffset":  {strconv.Itoa(offset)},
+		})
+		if err != nil {
+			return nil, err
+		}
+		var page []Song
+		if r.Sub.SearchResult != nil {
+			page = r.Sub.SearchResult.Song
+		}
+		out = append(out, page...)
+		if len(page) < songPage {
+			break
+		}
+	}
+	if len(out) > 0 {
+		return out, nil
+	}
+	return c.songsByAlbum(ctx)
+}
+
+// songsByAlbum collects every song by listing all albums and fetching each.
+// It is the slow fallback for servers without empty query search.
+func (c *Client) songsByAlbum(ctx context.Context) ([]Song, error) {
+	var out []Song
+	for offset := 0; ; offset += songPage {
+		albums, err := c.AlbumList(ctx, AlbumsAlphabetical, songPage, offset)
+		if err != nil {
+			return nil, err
+		}
+		for _, a := range albums {
+			al, err := c.Album(ctx, a.ID)
+			if err != nil {
+				return nil, err
+			}
+			out = append(out, al.Song...)
+		}
+		if len(albums) < songPage {
+			return out, nil
+		}
+	}
+}
+
 // Starred returns starred artists, albums and songs.
 func (c *Client) Starred(ctx context.Context) (*Starred, error) {
 	r, err := c.call(ctx, "getStarred2.view", nil)

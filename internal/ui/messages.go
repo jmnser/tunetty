@@ -17,6 +17,7 @@ type (
 	albumsMsg    struct{ albums []subsonic.Album }
 	playlistsMsg struct{ playlists []subsonic.Playlist }
 	starredMsg   struct{ starred *subsonic.Starred }
+	songsMsg     struct{ songs []subsonic.Song }
 	// Drill-down results carry the navigation sequence they were requested
 	// under; see Model.navSeq.
 	artistMsg struct {
@@ -168,6 +169,19 @@ func (m *Model) loadPlaylist(id string, seq int) tea.Cmd {
 			return errMsg{err: err, counted: true}
 		}
 		return playlistMsg{playlist: p, seq: seq}
+	}
+}
+
+// loadSongs fetches the whole library. It pages through many requests, each
+// bounded by the client's own timeout, so no overall deadline is set.
+func (m *Model) loadSongs() tea.Cmd {
+	cl := m.client
+	return func() tea.Msg {
+		songs, err := cl.AllSongs(context.Background())
+		if err != nil {
+			return errMsg{err: err, counted: true}
+		}
+		return songsMsg{songs}
 	}
 }
 

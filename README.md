@@ -8,8 +8,8 @@ static binary, no ALSA headers, no libopus, no ffmpeg.
 
 ## Features
 
-- **Subsonic / OpenSubsonic client** — artists, albums, playlists, starred
-  items, server-side search, scrobbling, favourites.
+- **Subsonic / OpenSubsonic client** — artists, albums, all songs, playlists,
+  starred items, server-side search, scrobbling, favourites.
 - **Gapless playback** — consecutive tracks are spliced sample-exactly. The
   output device is opened once and never torn down between tracks.
 - **Album art in the terminal** — kitty graphics, iTerm2 inline images, sixel,
@@ -120,6 +120,7 @@ Environment overrides: `TUNETTY_CONFIG`, `TUNETTY_SERVER`, `TUNETTY_USERNAME`,
 | `a` / `A` | queue / play next |
 | `x` / `X` | remove from queue / clear queue |
 | `z` | shuffle upcoming tracks |
+| `S` | shuffle play the current list (on Songs: the whole library) |
 | `*` | star |
 | `f` | fuzzy find |
 | `/` | filter the current list |

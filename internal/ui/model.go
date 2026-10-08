@@ -20,12 +20,13 @@ type view int
 const (
 	viewArtists view = iota
 	viewAlbums
+	viewSongs
 	viewPlaylists
 	viewStarred
 	viewQueue
 )
 
-var viewNames = []string{"Artists", "Albums", "Playlists", "Starred", "Queue"}
+var viewNames = []string{"Artists", "Albums", "Songs", "Playlists", "Starred", "Queue"}
 
 // browseLevel tracks how deep the user has drilled into a view.
 type browseLevel int
@@ -95,6 +96,8 @@ type Model struct {
 	albums    []subsonic.Album
 	playlists []subsonic.Playlist
 	starred   *subsonic.Starred
+	// songs is the whole library, loaded on the first visit to Songs.
+	songs []subsonic.Song
 
 	// Finder state.
 	index      index
@@ -209,19 +212,25 @@ func (m *Model) updateData(msg tea.Msg) tea.Cmd {
 		m.loadingDone()
 		m.artists = msg.artists
 		m.reindex()
-		m.refreshIfShowing(viewArtists, levelRoot)
+		m.refreshIfShowing(viewArtists)
 
 	case albumsMsg:
 		m.loadingDone()
 		m.albums = msg.albums
 		m.reindex()
-		m.refreshIfShowing(viewAlbums, levelRoot)
+		m.refreshIfShowing(viewAlbums)
 
 	case playlistsMsg:
 		m.loadingDone()
 		m.playlists = msg.playlists
 		m.reindex()
-		m.refreshIfShowing(viewPlaylists, levelRoot)
+		m.refreshIfShowing(viewPlaylists)
+
+	case songsMsg:
+		m.loadingDone()
+		m.songs = msg.songs
+		m.refreshIfShowing(viewSongs)
+		m.setStatus(plural(len(m.songs), "song"))
 
 	case starredMsg:
 		m.loadingDone()
@@ -339,9 +348,9 @@ func (m *Model) applyEnqueue(msg enqueueMsg) tea.Cmd {
 	return nil
 }
 
-// refreshIfShowing rebuilds the list only when the loaded data is on screen.
-func (m *Model) refreshIfShowing(v view, l browseLevel) {
-	if m.view == v && m.level == l {
+// refreshIfShowing rebuilds the list only when v's top level is on screen.
+func (m *Model) refreshIfShowing(v view) {
+	if m.view == v && m.level == levelRoot {
 		m.refreshList()
 	}
 }
@@ -560,6 +569,24 @@ func (m *Model) describeServer() string {
 		return m.client.BaseURL()
 	}
 	return fmt.Sprintf("%s %s", m.serverInfo.Type, m.serverInfo.Version)
+}
+
+// shufflePlay replaces the queue with the current list's tracks in random
+// order. On the Songs tab that shuffles the whole library.
+func (m *Model) shufflePlay() tea.Cmd {
+	songs := m.currentSongs()
+	if len(songs) == 0 {
+		if m.view == viewSongs && m.loading > 0 {
+			m.setStatus("songs are still loading")
+		} else {
+			m.setStatus("no tracks to shuffle here")
+		}
+		return nil
+	}
+	m.rng.Shuffle(len(songs), func(i, j int) { songs[i], songs[j] = songs[j], songs[i] })
+	m.engine.SetQueue(toTracks(m.client, m.cfg.Audio, songs), 0)
+	m.setStatus("shuffling " + plural(len(songs), "track"))
+	return m.ensureCover(coverIDOf(songs[0]))
 }
 
 // shuffleQueue randomises the pending part of the queue.

@@ -31,54 +31,57 @@ type KeyMap struct {
 	Mute       key.Binding
 	Repeat     key.Binding
 	Shuffle    key.Binding
-	Queue      key.Binding
-	AddQueue   key.Binding
-	PlayNext   key.Binding
-	Remove     key.Binding
-	ClearQueue key.Binding
-	Star       key.Binding
-	Find       key.Binding
-	Filter     key.Binding
-	Refresh    key.Binding
-	Help       key.Binding
-	Quit       key.Binding
+	// ShufflePlay replaces the queue with the current list, shuffled.
+	ShufflePlay key.Binding
+	Queue       key.Binding
+	AddQueue    key.Binding
+	PlayNext    key.Binding
+	Remove      key.Binding
+	ClearQueue  key.Binding
+	Star        key.Binding
+	Find        key.Binding
+	Filter      key.Binding
+	Refresh     key.Binding
+	Help        key.Binding
+	Quit        key.Binding
 }
 
 // DefaultKeys returns the stock bindings, with any configured overrides applied.
 func DefaultKeys(kb config.Keybinds) KeyMap {
 	k := KeyMap{
-		Up:         bind([]string{"up", "k"}, "↑/k", "up"),
-		Down:       bind([]string{"down", "j"}, "↓/j", "down"),
-		PageUp:     bind([]string{"pgup", "ctrl+u"}, "pgup", "page up"),
-		PageDown:   bind([]string{"pgdown", "ctrl+d"}, "pgdn", "page down"),
-		Home:       bind([]string{"home", "g"}, "g", "top"),
-		End:        bind([]string{"end", "G"}, "G", "bottom"),
-		Enter:      bind([]string{"enter", "l", "right"}, "enter", "open / play"),
-		Back:       bind([]string{"esc", "h", "left", "backspace"}, "esc", "back"),
-		Tab:        bind([]string{"tab"}, "tab", "next view"),
-		ShiftTab:   bind([]string{"shift+tab"}, "shift+tab", "previous view"),
-		PlayPause:  bind([]string{" ", "p"}, "space", "play/pause"),
-		Next:       bind([]string{"n", "ctrl+n"}, "n", "next track"),
-		Prev:       bind([]string{"b", "ctrl+p"}, "b", "previous track"),
-		Stop:       bind([]string{"s"}, "s", "stop"),
-		SeekFwd:    bind([]string{"]", "shift+right"}, "]", "seek forward"),
-		SeekBack:   bind([]string{"[", "shift+left"}, "[", "seek back"),
-		VolumeUp:   bind([]string{"+", "="}, "+", "volume up"),
-		VolumeDown: bind([]string{"-", "_"}, "-", "volume down"),
-		Mute:       bind([]string{"m"}, "m", "mute"),
-		Repeat:     bind([]string{"r"}, "r", "repeat mode"),
-		Shuffle:    bind([]string{"z"}, "z", "shuffle queue"),
-		Queue:      bind([]string{"q"}, "q", "queue view"),
-		AddQueue:   bind([]string{"a"}, "a", "add to queue"),
-		PlayNext:   bind([]string{"A"}, "A", "play next"),
-		Remove:     bind([]string{"x", "delete"}, "x", "remove"),
-		ClearQueue: bind([]string{"X"}, "X", "clear queue"),
-		Star:       bind([]string{"*"}, "*", "star"),
-		Find:       bind([]string{"f", "ctrl+f"}, "f", "fuzzy find"),
-		Filter:     bind([]string{"/"}, "/", "filter list"),
-		Refresh:    bind([]string{"R"}, "R", "refresh"),
-		Help:       bind([]string{"?"}, "?", "help"),
-		Quit:       bind([]string{"ctrl+c", "Q"}, "Q", "quit"),
+		Up:          bind([]string{"up", "k"}, "↑/k", "up"),
+		Down:        bind([]string{"down", "j"}, "↓/j", "down"),
+		PageUp:      bind([]string{"pgup", "ctrl+u"}, "pgup", "page up"),
+		PageDown:    bind([]string{"pgdown", "ctrl+d"}, "pgdn", "page down"),
+		Home:        bind([]string{"home", "g"}, "g", "top"),
+		End:         bind([]string{"end", "G"}, "G", "bottom"),
+		Enter:       bind([]string{"enter", "l", "right"}, "enter", "open / play"),
+		Back:        bind([]string{"esc", "h", "left", "backspace"}, "esc", "back"),
+		Tab:         bind([]string{"tab"}, "tab", "next view"),
+		ShiftTab:    bind([]string{"shift+tab"}, "shift+tab", "previous view"),
+		PlayPause:   bind([]string{" ", "p"}, "space", "play/pause"),
+		Next:        bind([]string{"n", "ctrl+n"}, "n", "next track"),
+		Prev:        bind([]string{"b", "ctrl+p"}, "b", "previous track"),
+		Stop:        bind([]string{"s"}, "s", "stop"),
+		SeekFwd:     bind([]string{"]", "shift+right"}, "]", "seek forward"),
+		SeekBack:    bind([]string{"[", "shift+left"}, "[", "seek back"),
+		VolumeUp:    bind([]string{"+", "="}, "+", "volume up"),
+		VolumeDown:  bind([]string{"-", "_"}, "-", "volume down"),
+		Mute:        bind([]string{"m"}, "m", "mute"),
+		Repeat:      bind([]string{"r"}, "r", "repeat mode"),
+		Shuffle:     bind([]string{"z"}, "z", "shuffle queue"),
+		ShufflePlay: bind([]string{"S"}, "S", "shuffle play list"),
+		Queue:       bind([]string{"q"}, "q", "queue view"),
+		AddQueue:    bind([]string{"a"}, "a", "add to queue"),
+		PlayNext:    bind([]string{"A"}, "A", "play next"),
+		Remove:      bind([]string{"x", "delete"}, "x", "remove"),
+		ClearQueue:  bind([]string{"X"}, "X", "clear queue"),
+		Star:        bind([]string{"*"}, "*", "star"),
+		Find:        bind([]string{"f", "ctrl+f"}, "f", "fuzzy find"),
+		Filter:      bind([]string{"/"}, "/", "filter list"),
+		Refresh:     bind([]string{"R"}, "R", "refresh"),
+		Help:        bind([]string{"?"}, "?", "help"),
+		Quit:        bind([]string{"ctrl+c", "Q"}, "Q", "quit"),
 	}
 
 	override(&k.PlayPause, kb.PlayPause)
@@ -146,7 +149,7 @@ func (k KeyMap) HelpSections() []struct {
 			e(k.Mute), e(k.Repeat),
 		}},
 		{"Queue", []helpEntry{
-			e(k.AddQueue), e(k.PlayNext), e(k.Remove), e(k.ClearQueue), e(k.Shuffle), e(k.Queue),
+			e(k.AddQueue), e(k.PlayNext), e(k.Remove), e(k.ClearQueue), e(k.Shuffle), e(k.ShufflePlay), e(k.Queue),
 		}},
 		{"Other", []helpEntry{
 			e(k.Find), e(k.Filter), e(k.Star), e(k.Refresh), e(k.Help), e(k.Quit),

@@ -315,6 +315,7 @@ func (m *Model) switchView(v view) tea.Cmd {
 	m.view = v
 	m.level = levelRoot
 	m.crumbArtist, m.crumbAlbum, m.crumbList = nil, nil, nil
+	m.artistSongs = nil
 	m.beginNav()
 	m.refreshList()
 
@@ -363,6 +364,10 @@ func (m *Model) activate() tea.Cmd {
 		m.loading++
 		return m.loadAlbum(data.ID, m.beginNav())
 
+	case allSongs:
+		m.loading++
+		return m.loadArtistSongs(data.artist.ID, m.beginNav())
+
 	case subsonic.Playlist:
 		m.loading++
 		return m.loadPlaylist(data.ID, m.beginNav())
@@ -386,7 +391,7 @@ func (m *Model) activate() tea.Cmd {
 func (m *Model) goBack() {
 	switch m.level {
 	case levelTracks:
-		m.crumbAlbum, m.crumbList = nil, nil
+		m.crumbAlbum, m.crumbList, m.artistSongs = nil, nil, nil
 		m.level = levelRoot
 		if m.crumbArtist != nil {
 			m.level = levelAlbums
@@ -409,6 +414,8 @@ func (m *Model) refreshCurrent() tea.Cmd {
 		return m.loadAlbum(m.crumbAlbum.ID, m.beginNav())
 	case m.level == levelTracks && m.crumbList != nil:
 		return m.loadPlaylist(m.crumbList.ID, m.beginNav())
+	case m.level == levelTracks && m.crumbArtist != nil:
+		return m.loadArtistSongs(m.crumbArtist.ID, m.beginNav())
 	case m.level == levelAlbums && m.crumbArtist != nil:
 		return m.loadArtist(m.crumbArtist.ID, m.beginNav())
 	}
@@ -448,6 +455,8 @@ func (m *Model) previewCover() tea.Cmd {
 		return m.ensureCover(coverIDOf(d))
 	case subsonic.Artist:
 		return m.ensureCover(d.CoverArt)
+	case allSongs:
+		return m.ensureCover(d.artist.CoverArt)
 	}
 	return nil
 }
@@ -482,6 +491,11 @@ func (m *Model) enqueueSelection(next bool) tea.Cmd {
 				return nil, err
 			}
 			return al.Song, nil
+		})
+
+	case allSongs:
+		return m.fetchAndQueue(data.artist.Name, next, func(ctx context.Context) ([]subsonic.Song, error) {
+			return m.client.ArtistSongs(ctx, data.artist.ID)
 		})
 
 	case subsonic.Playlist:

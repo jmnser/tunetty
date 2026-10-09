@@ -86,6 +86,9 @@ type Model struct {
 	crumbArtist *subsonic.Artist
 	crumbAlbum  *subsonic.Album
 	crumbList   *subsonic.Playlist
+	// artistSongs holds every song of crumbArtist while its "All songs"
+	// entry is open; nil otherwise.
+	artistSongs []subsonic.Song
 	// navSeq numbers navigation steps. Drill-down responses carry the value
 	// current when they were requested and are dropped once the user has
 	// navigated elsewhere.
@@ -244,7 +247,7 @@ func (m *Model) updateData(msg tea.Msg) tea.Cmd {
 			return nil // the user navigated away while it loaded
 		}
 		m.crumbArtist = msg.artist
-		m.crumbAlbum, m.crumbList = nil, nil
+		m.crumbAlbum, m.crumbList, m.artistSongs = nil, nil, nil
 		m.level = levelAlbums
 		m.enterLevel()
 
@@ -259,6 +262,9 @@ func (m *Model) updateData(msg tea.Msg) tea.Cmd {
 		m.level = levelTracks
 		m.enterLevel()
 		return m.previewCover()
+
+	case artistSongsMsg:
+		return m.applyArtistSongs(msg)
 
 	case playlistMsg:
 		m.loadingDone()
@@ -301,18 +307,7 @@ func (m *Model) updateData(msg tea.Msg) tea.Cmd {
 		return m.loadStarred()
 
 	case coverMsg:
-		if msg.id == m.coverPending {
-			m.coverPending = ""
-		}
-		if msg.err != nil {
-			m.covers.markMissing(msg.id)
-			return nil
-		}
-		m.covers.put(msg.id, msg.img)
-		if msg.id == m.currentCID {
-			m.currentArt = msg.img
-			m.renderArt()
-		}
+		m.applyCover(msg)
 
 	case enqueueMsg:
 		return m.applyEnqueue(msg)
@@ -353,6 +348,37 @@ func (m *Model) applySongs(msg songsMsg) tea.Cmd {
 		m.setStatus(plural(len(m.songs), "song") + " loaded, scroll for more")
 	}
 	return nil
+}
+
+// applyArtistSongs opens an artist's "All songs" entry.
+func (m *Model) applyArtistSongs(msg artistSongsMsg) tea.Cmd {
+	m.loadingDone()
+	if msg.seq != m.navSeq {
+		return nil
+	}
+	// crumbArtist stays set; the songs replace its album list.
+	m.artistSongs = msg.songs
+	m.crumbAlbum, m.crumbList = nil, nil
+	m.level = levelTracks
+	m.enterLevel()
+	m.setStatus(plural(len(msg.songs), "song"))
+	return m.previewCover()
+}
+
+// applyCover caches fetched artwork and shows it if it is still wanted.
+func (m *Model) applyCover(msg coverMsg) {
+	if msg.id == m.coverPending {
+		m.coverPending = ""
+	}
+	if msg.err != nil {
+		m.covers.markMissing(msg.id)
+		return
+	}
+	m.covers.put(msg.id, msg.img)
+	if msg.id == m.currentCID {
+		m.currentArt = msg.img
+		m.renderArt()
+	}
 }
 
 // applyEnqueue adds a background loaded collection to the queue.
@@ -552,6 +578,8 @@ func (m *Model) crumbs() []string {
 			out = append(out, m.crumbAlbum.Name)
 		case m.crumbList != nil:
 			out = append(out, m.crumbList.Name)
+		case m.crumbArtist != nil:
+			out = append(out, allSongsLabel)
 		}
 	}
 	return out

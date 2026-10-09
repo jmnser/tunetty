@@ -25,11 +25,14 @@ func (m *Model) buildItems() []listItem {
 		switch m.level {
 		case levelAlbums:
 			if m.crumbArtist != nil {
-				return m.albumItems(m.crumbArtist.Album)
+				return append([]listItem{allSongsItem(*m.crumbArtist)}, m.albumItems(m.crumbArtist.Album)...)
 			}
 		case levelTracks:
 			if m.crumbAlbum != nil {
 				return m.songItems(m.crumbAlbum.Song, true)
+			}
+			if m.crumbArtist != nil {
+				return m.songItems(m.artistSongs, false)
 			}
 		}
 		return m.artistItems(m.artists)
@@ -78,6 +81,25 @@ func (m *Model) artistItems(artists []subsonic.Artist) []listItem {
 		})
 	}
 	return out
+}
+
+// allSongsLabel names the entry that opens every song of an artist.
+const allSongsLabel = "All songs"
+
+// allSongs is the row data of an artist's "All songs" entry.
+type allSongs struct{ artist subsonic.Artist }
+
+// allSongsItem is the first row of an artist's album list.
+func allSongsItem(a subsonic.Artist) listItem {
+	n := 0
+	for _, al := range a.Album {
+		n += al.SongCount
+	}
+	return listItem{
+		Primary:   allSongsLabel,
+		Secondary: plural(n, "track"),
+		Data:      allSongs{artist: a},
+	}
 }
 
 func (m *Model) albumItems(albums []subsonic.Album) []listItem {

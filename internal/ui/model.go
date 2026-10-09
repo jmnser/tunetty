@@ -131,6 +131,9 @@ type Model struct {
 	// They override the server state carried in cached catalogue data.
 	stars map[string]bool
 
+	// tmuxHelp holds the tmux bindings for tunetty, read when help opens.
+	tmuxHelp []helpEntry
+
 	status     string
 	statusTime time.Time
 	err        error

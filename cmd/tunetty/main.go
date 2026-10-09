@@ -3,11 +3,13 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"errors"
 	"flag"
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -17,6 +19,7 @@ import (
 	"github.com/jmnser/tunetty/internal/art"
 	"github.com/jmnser/tunetty/internal/audio"
 	"github.com/jmnser/tunetty/internal/config"
+	"github.com/jmnser/tunetty/internal/remote"
 	"github.com/jmnser/tunetty/internal/subsonic"
 	"github.com/jmnser/tunetty/internal/ui"
 )
@@ -62,7 +65,11 @@ func parseFlags() flags {
 
 	flag.Usage = func() {
 		out := flag.CommandLine.Output()
-		_, _ = fmt.Fprint(out, "tunetty — Subsonic terminal music player\n\nusage: tunetty [flags]\n\nflags:\n")
+		_, _ = fmt.Fprint(out, "tunetty — Subsonic terminal music player\n\n"+
+			"usage: tunetty [flags]\n"+
+			"       tunetty status [--bar N]    print the running player's track, for tmux\n"+
+			"       tunetty ctl <command>       control the running player, see 'tunetty ctl'\n\n"+
+			"flags:\n")
 		flag.PrintDefaults()
 		_, _ = fmt.Fprint(out, "\nenvironment:\n"+
 			"  TUNETTY_CONFIG          config file path\n"+
@@ -78,6 +85,9 @@ func parseFlags() flags {
 }
 
 func run() error {
+	if handled, err := runRemote(os.Args[1:]); handled {
+		return err
+	}
 	f := parseFlags()
 
 	if f.showVersion {
@@ -185,6 +195,16 @@ func start(cfg config.Config) error {
 	}
 	defer func() { _ = engine.Close() }()
 
+	// The control socket backs `tunetty status` and `tunetty ctl`. Only the
+	// first instance serves it; later ones play without it.
+	srv, err := remote.Listen(engine, remote.Steps{Seek: cfg.UI.SeekStep.D(), Volume: cfg.UI.VolumeStep})
+	switch {
+	case err == nil:
+		defer func() { _ = srv.Close() }()
+	case !errors.Is(err, remote.ErrInUse):
+		return err
+	}
+
 	model := ui.New(ui.Options{
 		Client:     client,
 		Engine:     engine,
@@ -260,9 +280,32 @@ func doctor(cfg config.Config, path string, missing bool) error {
 	return nil
 }
 
+// tmuxConf is the tmux integration written next to the config by -init.
+//
+//go:embed tmux.conf
+var tmuxConf []byte
+
+// writeStarterConfig writes the config file and the tmux integration next to
+// it, each only if it does not exist yet, so -init also adds the tmux file to
+// an existing setup.
 func writeStarterConfig(cfg config.Config, path string) error {
-	if _, err := os.Stat(path); err == nil {
-		return fmt.Errorf("refusing to overwrite existing config at %s", path)
+	tmuxPath := filepath.Join(filepath.Dir(path), "tmux.conf")
+	configExists, tmuxExists := exists(path), exists(tmuxPath)
+	if configExists && tmuxExists {
+		return fmt.Errorf("refusing to overwrite existing %s and %s", path, tmuxPath)
+	}
+	if !tmuxExists {
+		if err := os.MkdirAll(filepath.Dir(tmuxPath), 0o700); err != nil {
+			return err
+		}
+		if err := os.WriteFile(tmuxPath, tmuxConf, 0o600); err != nil {
+			return err
+		}
+		fmt.Printf("wrote %s\n\nAdd this line to $HOME/.tmux.conf for the tmux integration:\n"+
+			"  source-file \"%s\"\n\n", tmuxPath, homeRelative(tmuxPath))
+	}
+	if configExists {
+		return nil
 	}
 	if cfg.Server.URL == "" {
 		cfg.Server.URL = "https://music.example.com"
@@ -279,6 +322,24 @@ func writeStarterConfig(cfg config.Config, path string) error {
 	fmt.Printf("wrote %s\n\nEdit it to set server.url, server.username and either\n"+
 		"server.password or server.password_command, then run tunetty.\n", path)
 	return nil
+}
+
+// homeRelative writes a path under the home directory as $HOME/..., which
+// stays valid in a config file shared between machines.
+func homeRelative(path string) string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return path
+	}
+	if rest, ok := strings.CutPrefix(path, home+string(filepath.Separator)); ok {
+		return "$HOME/" + rest
+	}
+	return path
+}
+
+func exists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
 }
 
 func orNone(s string) string {

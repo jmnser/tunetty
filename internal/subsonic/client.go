@@ -304,6 +304,24 @@ func (c *Client) Artist(ctx context.Context, id string) (*Artist, error) {
 	return r.Sub.Artist, nil
 }
 
+// ArtistSongs returns every song of an artist, album by album in the order
+// the server lists the albums.
+func (c *Client) ArtistSongs(ctx context.Context, id string) ([]Song, error) {
+	a, err := c.Artist(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	var out []Song
+	for _, al := range a.Album {
+		full, err := c.Album(ctx, al.ID)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, full.Song...)
+	}
+	return out, nil
+}
+
 // Album returns one album including its songs.
 func (c *Client) Album(ctx context.Context, id string) (*Album, error) {
 	r, err := c.call(ctx, "getAlbum.view", url.Values{"id": {id}})

@@ -36,6 +36,10 @@ type (
 		album *subsonic.Album
 		seq   int
 	}
+	artistSongsMsg struct {
+		songs []subsonic.Song
+		seq   int
+	}
 	playlistMsg struct {
 		playlist *subsonic.Playlist
 		seq      int
@@ -151,6 +155,20 @@ func (m *Model) loadAlbum(id string, seq int) tea.Cmd {
 			return errMsg{err: err, counted: true}
 		}
 		return albumMsg{album: a, seq: seq}
+	}
+}
+
+// loadArtistSongs fetches every song of an artist. It takes one request per
+// album, each bounded by the client's own timeout, so no overall deadline is
+// set.
+func (m *Model) loadArtistSongs(id string, seq int) tea.Cmd {
+	cl := m.client
+	return func() tea.Msg {
+		songs, err := cl.ArtistSongs(context.Background(), id)
+		if err != nil {
+			return errMsg{err: err, counted: true}
+		}
+		return artistSongsMsg{songs: songs, seq: seq}
 	}
 }
 

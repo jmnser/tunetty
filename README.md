@@ -12,6 +12,7 @@ art in the terminal and a single static binary.
 - **Gapless playback**: consecutive tracks are joined sample-exactly.
 - **Fuzzy finder**: local matching merged with server-side search as you type.
 - **Pure Go decoding**: Opus, MP3, FLAC, Vorbis and WAV.
+- **Media keys**: MPRIS on Linux, Now Playing on macOS.
 - **Album art (experimental)**: kitty, iTerm2, sixel or half blocks, also inside
   tmux. Off by default, enable with `--art-work`.
 

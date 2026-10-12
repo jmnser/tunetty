@@ -17,6 +17,7 @@ import (
 	"github.com/jmnser/tunetty/internal/art"
 	"github.com/jmnser/tunetty/internal/audio"
 	"github.com/jmnser/tunetty/internal/config"
+	"github.com/jmnser/tunetty/internal/mediakeys"
 	"github.com/jmnser/tunetty/internal/subsonic"
 	"github.com/jmnser/tunetty/internal/ui"
 )
@@ -29,10 +30,13 @@ var (
 )
 
 func main() {
-	if err := run(); err != nil {
-		fmt.Fprintln(os.Stderr, "tunetty: "+err.Error())
-		os.Exit(1)
-	}
+	runMain(func() int {
+		if err := run(); err != nil {
+			fmt.Fprintln(os.Stderr, "tunetty: "+err.Error())
+			return 1
+		}
+		return 0
+	})
 }
 
 type flags struct {
@@ -184,6 +188,11 @@ func start(cfg config.Config) error {
 		return fmt.Errorf("opening audio output: %w", err)
 	}
 	defer func() { _ = engine.Close() }()
+
+	// Media keys are a convenience: without them the player works the same.
+	if stopKeys, err := mediakeys.Start(engine); err == nil {
+		defer stopKeys()
+	}
 
 	model := ui.New(ui.Options{
 		Client:     client,

@@ -119,8 +119,8 @@ func openCommandSink(f Format, pull PullFunc) (Sink, error) {
 }
 
 func baseName(p string) string {
-	if i := strings.LastIndexByte(p, '/'); i >= 0 {
-		return p[i+1:]
+	if _, after, ok := strings.CutLast(p, "/"); ok {
+		return after
 	}
 	return p
 }

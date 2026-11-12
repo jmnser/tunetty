@@ -66,8 +66,9 @@ password_command = "pass show music/subsonic"
 `tunetty status` prints the playing track, `tunetty ctl <command>` controls
 the running player (`tunetty ctl` lists the commands). `tunetty -init` writes
 `~/.config/tunetty/tmux.conf`, which puts both into tmux: a second status line
-with the playing track and a progress bar, `F8`–`F12` media keys and a popup on
-`prefix + m`. Load it from `$HOME/.tmux.conf`:
+with the playing track and a progress bar, `F8`–`F12` media keys, a popup on
+`prefix + m` and a session list (`prefix + s`, `prefix + w`) sorted by name with
+tunetty at the top. Load it from `$HOME/.tmux.conf`:
 
 ```tmux
 source-file "$HOME/.config/tunetty/tmux.conf"
